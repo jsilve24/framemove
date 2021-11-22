@@ -112,7 +112,44 @@
          (possible-frames
           (sort
            (cl-remove-if-not
-            '(lambda (f) (fm-frame-is-to-dir-of f dir thisframe))
+            '(lambda (f) (and (fm-frame-is-to-dir-of f dir thisframe)
+			      (exwm-workspace--active-p f)))
+            (visible-frame-list))
+           #'(lambda (f1 f2) (fm-frame-is-to-dir-of f1 (fm-opposite dir) f2)))))
+    (if possible-frames
+        (let ((frames-in-line-of-cursor
+               ;; try to find frame in line with cursor
+               (cl-remove-if-not
+                '(lambda (f) (fm-coord-in-range current-coords dir f))
+                possible-frames))
+              (frames-in-line-of-frame
+               ;; find frame that overlaps current frame
+               ;; need to sort by distance from cursor
+               (sort
+                (cl-remove-if-not
+                 '(lambda (f) (fm-range-overlap thisframe f dir))
+                 possible-frames)
+                #'(lambda (f1 f2)
+                   (< (fm-dist-from-coords coords-projected-in-dir f1)
+                      (fm-dist-from-coords coords-projected-in-dir f2))))))
+          (select-frame-set-input-focus
+           (or (car frames-in-line-of-cursor)
+               (car frames-in-line-of-frame)
+               (car possible-frames))))
+      (error "No frame in that direction"))))
+
+(defun fm-next-frame (dir)
+  "move focus to next frame in direction (from currently focused frame)"
+  (interactive (list
+                (intern (completing-read "Which direction: " '("up" "down" "left" "right") nil t))))
+  (let* ((thisframe (selected-frame))
+         (current-coords (fm-absolute-coords-of-position (posn-at-point)))
+         (coords-projected-in-dir (fm-project current-coords thisframe dir))
+         (possible-frames
+          (sort
+           (cl-remove-if-not
+            '(lambda (f) (and (fm-frame-is-to-dir-of f dir thisframe)
+			      (exwm-workspace--active-p f)))
             (visible-frame-list))
            #'(lambda (f1 f2) (fm-frame-is-to-dir-of f1 (fm-opposite dir) f2)))))
     (if possible-frames
