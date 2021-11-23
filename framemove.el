@@ -113,7 +113,8 @@
           (sort
            (cl-remove-if-not
             '(lambda (f) (and (fm-frame-is-to-dir-of f dir thisframe)
-			      (exwm-workspace--active-p f)))
+			      (and (fboundp 'exwm-workspace--active-p)
+				   (exwm-workspace--active-p f))))
             (visible-frame-list))
            #'(lambda (f1 f2) (fm-frame-is-to-dir-of f1 (fm-opposite dir) f2)))))
     (if possible-frames
